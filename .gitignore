@@ -1,0 +1,10 @@
+Src/.vs/
+Src/**/.config/
+
+Src/**/[Bb]in/
+Src/**/[Oo]bj/
+
+Src/**/*.suo
+Src/**/*.user
+
+*.pubxml
