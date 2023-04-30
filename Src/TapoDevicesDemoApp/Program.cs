@@ -13,7 +13,7 @@ namespace TapoDevicesDemoApp
 
             // Read and display device information
             var info = await device.GetInfoAsync();
-            Console.WriteLine($"{info.Model} {info.Type} {info.HardwareVersion} '{info.Nickname}'");
+            Console.WriteLine($"{info.Type} {info.Model} '{info.Nickname}' {info.HardwareVersion} {info.FirmwareVersion}");
             Console.WriteLine($"{info.IPAddress} {info.MacAddress}");
             Console.WriteLine($"SSID ='{info.SSID}' RSSI={info.Rssi}");
 

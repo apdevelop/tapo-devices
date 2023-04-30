@@ -81,7 +81,7 @@ namespace TapoDevices
             public bool HasSetLocationInfo { get; set; }
 
             [JsonPropertyName("device_on")]
-            public bool DeviceIsOn { get; set; }
+            public bool DeviceOn { get; set; }
         }
 
         // TODO: specific devices results (light bulb, socket)

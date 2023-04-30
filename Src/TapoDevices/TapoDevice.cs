@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -50,8 +49,12 @@ namespace TapoDevices
 
             var handshakeRequest = Handshake.CreateRequest(new Handshake.Params { Key = publicKeyWrapped });
             var handshakeResponse = await this.PostAsync<Handshake.Params, Handshake.Result>(handshakeRequest);
+            if (handshakeResponse.ErrorCode != (int)ErrorCode.Success)
+            {
+                throw new InvalidOperationException($"Handshake error, code {handshakeResponse.ErrorCode} ({((ErrorCode)handshakeResponse.ErrorCode).GetDescription()})."); // TODO: ? proper exception class
+            }
+
             var handshakeResult = handshakeResponse.Result;
-            // TODO: check ErrorCode
 
             var encryptionParts = key.Decrypt(Convert.FromBase64String(handshakeResult.Key), RSAEncryptionPadding.Pkcs1);
             var aesKey = encryptionParts.Take(16).ToArray();
@@ -72,53 +75,73 @@ namespace TapoDevices
             var loginRequestEncoded = Utils.SecureEncode(this.encryptor, loginRequest);
             var loginResponse = await this.PostAsync<SecurePassthrough.Params, SecurePassthrough.Result>(loginRequestEncoded);
             var loginDecoded = Utils.SecureDecode<LoginDevice.Result>(this.decryptor, loginResponse.Result);
-            // TODO: check ErrorCode
+            if (loginDecoded.ErrorCode != (int)ErrorCode.Success)
+            {
+                throw new InvalidOperationException($"Login error, code {loginDecoded.ErrorCode} ({((ErrorCode)loginDecoded.ErrorCode).GetDescription()})."); // TODO: ? proper exception class
+            }
 
             this.token = loginDecoded.Result.Token;
-
-            // TODO: ! error codes processing
         }
 
         #region Application-level device control
 
-        // TODO: check connection state
-
         public async Task<GetDeviceInfo.Result> GetInfoAsync()
         {
+            this.ValidateConnection();
             var request = GetDeviceInfo.CreateRequest();
+
             var encoded = Utils.SecureEncode(this.encryptor, request);
             var response = await this.PostAsync<SecurePassthrough.Params, SecurePassthrough.Result>(encoded, this.token);
             var decoded = Utils.SecureDecode<GetDeviceInfo.Result>(this.decryptor, response.Result);
+            if (decoded.ErrorCode != (int)ErrorCode.Success)
+            {
+                throw new InvalidOperationException($"Command execution error, code {decoded.ErrorCode} ({((ErrorCode)decoded.ErrorCode).GetDescription()})."); // TODO: ? proper exception class
+            }
+
             return decoded.Result;
         }
 
-        public async Task<int> TurnOnAsync()
+        public async Task TurnOnAsync()
         {
-            return await this.SetDeviceOnAsync(true);
+            await this.SetDeviceOnAsync(true);
         }
 
-        public async Task<int> TurnOffAsync()
+        public async Task TurnOffAsync()
         {
-            return await this.SetDeviceOnAsync(false);
+            await this.SetDeviceOnAsync(false);
         }
 
         // TODO: more control methods
 
-        private async Task<int> SetDeviceOnAsync(bool state)
+        private async Task SetDeviceOnAsync(bool state)
         {
-            var request = SetDeviceInfo.CreateRequest(
-                    new Dictionary<string, object>()
-                    {
-                        { "device_on", state },
-                    });
+            this.ValidateConnection();
+            var request = SetDeviceInfo.CreateRequest(new SetDeviceInfo.Params
+            {
+                DeviceOn = state,
+            });
 
             var encoded = Utils.SecureEncode(this.encryptor, request);
             var response = await this.PostAsync<SecurePassthrough.Params, SecurePassthrough.Result>(encoded, this.token);
             var decoded = Utils.SecureDecode<SetDeviceInfo.Result>(this.decryptor, response.Result);
-            return decoded.ErrorCode;
+
+            if (decoded.ErrorCode != (int)ErrorCode.Success)
+            {
+                throw new InvalidOperationException($"Command execution error, code {decoded.ErrorCode} ({((ErrorCode)decoded.ErrorCode).GetDescription()})."); // TODO: ? proper exception class
+            }
         }
 
         #endregion
+
+        private bool IsConnected => this.encryptor != null && this.decryptor != null && this.token != null;
+
+        private void ValidateConnection()
+        {
+            if (!this.IsConnected)
+            {
+                throw new InvalidOperationException($"No connection to device was established.");
+            }
+        }
 
         private async Task<TapoResponse<TResult>> PostAsync<TRequest, TResult>(TapoRequest<TRequest> request, string token = null)
         {

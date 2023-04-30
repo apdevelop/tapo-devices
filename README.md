@@ -34,7 +34,6 @@ await device.TurnOffAsync();
 ### TODOs
 * Implement as .NET Standard 2.0 library
 * Support for more of device features
-* Processing returned error codes
 * Support for more device types
 
 
