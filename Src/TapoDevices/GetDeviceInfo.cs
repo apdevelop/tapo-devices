@@ -6,6 +6,11 @@ namespace TapoDevices
 {
     public class GetDeviceInfo
     {
+        public class Params
+        {
+
+        }
+
         public class Result
         {
             [JsonPropertyName("device_id")]
@@ -84,9 +89,25 @@ namespace TapoDevices
             public bool DeviceOn { get; set; }
         }
 
-        // TODO: specific devices results (light bulb, socket)
+        public class ResultBulb : Result
+        {
+            [JsonPropertyName("brightness")]
+            public int Brightness { get; set; }
 
-        internal static TapoRequest<object> CreateRequest() =>
-            Utils.CreateTapoRequest<object>("get_device_info", null);
+            [JsonPropertyName("hue")]
+            public int Hue { get; set; }
+
+            [JsonPropertyName("saturation")]
+            public int Saturation { get; set; }
+
+            [JsonPropertyName("color_temp")]
+            public int ColorTemperature { get; set; }
+
+            [JsonPropertyName("color_temp_range")]
+            public int[] ColorTemperatureRange { get; set; }
+        }
+
+        internal static TapoRequest<Params> CreateRequest() =>
+            Utils.CreateTapoRequest<Params>("get_device_info", null);
     }
 }

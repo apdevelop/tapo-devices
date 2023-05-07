@@ -10,9 +10,9 @@ using System.Threading.Tasks;
 namespace TapoDevices
 {
     /// <summary>
-    /// Represents connection to Tapo device.
+    /// Represents connection to generic Tapo device.
     /// </summary>
-    public class TapoDevice // TODO: ? specific device types
+    public class TapoDevice // TODO: TapoPlug
     {
         private readonly HttpClient client;
 
@@ -25,13 +25,13 @@ namespace TapoDevices
         /// <summary>
         /// Creates an instance of connection to Tapo device.
         /// </summary>
-        /// <param name="ip">IP address of device in local network.</param>
-        public TapoDevice(string ip) // TODO: ? DeviceFactory with shared credentials?
+        /// <param name="ipAddress">IP address of device in local network.</param>
+        public TapoDevice(string ipAddress) // TODO: ? DeviceFactory with shared credentials?
         {
             this.client = new HttpClient
             {
                 Timeout = TimeSpan.FromSeconds(5.0), // TODO: ? parameter
-                BaseAddress = new Uri($"http://{ip}/app")
+                BaseAddress = new Uri($"http://{ipAddress}/app")
             };
         }
 
@@ -87,60 +87,52 @@ namespace TapoDevices
 
         public async Task<GetDeviceInfo.Result> GetInfoAsync()
         {
-            this.ValidateConnection();
             var request = GetDeviceInfo.CreateRequest();
+            return await PostSecuredAsync<TapoRequest<GetDeviceInfo.Params>, GetDeviceInfo.Result>(request);
+        }
+
+        public async Task TurnOnAsync()
+        {
+            var request = SetDeviceInfo.CreateRequest(new SetDeviceInfo.Params { DeviceOn = true });
+            await PostSecuredAsync<TapoRequest<SetDeviceInfo.Params>, SetDeviceInfo.Result>(request);
+        }
+
+        public async Task TurnOffAsync()
+        {
+            var request = SetDeviceInfo.CreateRequest(new SetDeviceInfo.Params { DeviceOn = false });
+            await PostSecuredAsync<TapoRequest<SetDeviceInfo.Params>, SetDeviceInfo.Result>(request);
+        }
+
+        // TODO: more control methods
+        // TODO: Turn on/off with delay ("add_countdown_rule")
+        // TODO: GetEnergyUsage ("get_energy_usage") for P110
+
+        #endregion
+
+        private bool IsConnected => this.encryptor != null && this.decryptor != null && this.token != null;
+
+        protected void ValidateConnection()
+        {
+            if (!this.IsConnected)
+            {
+                throw new InvalidOperationException($"No connection to device was established.");
+            }
+        }
+
+        protected async Task<TResult> PostSecuredAsync<TRequest, TResult>(TRequest request)
+        {
+            this.ValidateConnection();
 
             var encoded = Utils.SecureEncode(this.encryptor, request);
             var response = await this.PostAsync<SecurePassthrough.Params, SecurePassthrough.Result>(encoded, this.token);
-            var decoded = Utils.SecureDecode<GetDeviceInfo.Result>(this.decryptor, response.Result);
+            var decoded = Utils.SecureDecode<TResult>(this.decryptor, response.Result);
+
             if (decoded.ErrorCode != (int)ErrorCode.Success)
             {
                 throw new InvalidOperationException($"Command execution error, code {decoded.ErrorCode} ({((ErrorCode)decoded.ErrorCode).GetDescription()})."); // TODO: ? proper exception class
             }
 
             return decoded.Result;
-        }
-
-        public async Task TurnOnAsync()
-        {
-            await this.SetDeviceOnAsync(true);
-        }
-
-        public async Task TurnOffAsync()
-        {
-            await this.SetDeviceOnAsync(false);
-        }
-
-        // TODO: more control methods
-
-        private async Task SetDeviceOnAsync(bool state)
-        {
-            this.ValidateConnection();
-            var request = SetDeviceInfo.CreateRequest(new SetDeviceInfo.Params
-            {
-                DeviceOn = state,
-            });
-
-            var encoded = Utils.SecureEncode(this.encryptor, request);
-            var response = await this.PostAsync<SecurePassthrough.Params, SecurePassthrough.Result>(encoded, this.token);
-            var decoded = Utils.SecureDecode<SetDeviceInfo.Result>(this.decryptor, response.Result);
-
-            if (decoded.ErrorCode != (int)ErrorCode.Success)
-            {
-                throw new InvalidOperationException($"Command execution error, code {decoded.ErrorCode} ({((ErrorCode)decoded.ErrorCode).GetDescription()})."); // TODO: ? proper exception class
-            }
-        }
-
-        #endregion
-
-        private bool IsConnected => this.encryptor != null && this.decryptor != null && this.token != null;
-
-        private void ValidateConnection()
-        {
-            if (!this.IsConnected)
-            {
-                throw new InvalidOperationException($"No connection to device was established.");
-            }
         }
 
         private async Task<TapoResponse<TResult>> PostAsync<TRequest, TResult>(TapoRequest<TRequest> request, string token = null)
