@@ -56,3 +56,5 @@ await bulb.SetParametersAsync(
 * [Kostiantyn's Blog: Connecting to Tapo lamps from F#](https://sharovarskyi.com/blog/posts/fsharp-tapo-lamps/)
 * [KHome.TapoLights](https://github.com/kostya9/KHome.TapoLights)
 * [PyP100 Python library](https://github.com/fishbigger/TapoP100)
+* [TapoSharp is a .NET implementation of the Tapo Smart Plug API](https://github.com/Cirx08/TapoSharp)
+* 

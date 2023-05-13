@@ -1,14 +1,27 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace TapoDevices
 {
     /// <summary>
-    /// Represents connection to Tapo Smart Light Bulb L530 device.
+    /// Represents connection to Tapo Smart Light Bulb L510/L530 device.
     /// </summary>
     /// <remarks>SMART.TAPOBULB</remarks>
     public class TapoBulb : TapoDevice
     {
-        public TapoBulb(string ipAddress) : base(ipAddress)
+        public TapoBulb(
+            string ipAddress,
+            string username,
+            string password) : base(ipAddress, username, password)
+        {
+
+        }
+
+        public TapoBulb(
+            string ipAddress,
+            string username,
+            string password,
+            TimeSpan defaultRequestTimeout) : base(ipAddress, username, password, defaultRequestTimeout)
         {
 
         }
@@ -54,7 +67,5 @@ namespace TapoDevices
             var request = SetDeviceInfo.CreateRequest(parameters);
             await PostSecuredAsync<TapoRequest<SetDeviceInfo.ParamsBulb>, SetDeviceInfo.Result>(request);
         }
-
-        // TODO: method to set several parameters at once
     }
 }

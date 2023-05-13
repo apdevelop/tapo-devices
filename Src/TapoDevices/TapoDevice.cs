@@ -14,6 +14,12 @@ namespace TapoDevices
     /// </summary>
     public class TapoDevice // TODO: TapoPlug
     {
+        private readonly string username;
+
+        private readonly string password;
+
+        private readonly TimeSpan defaultRequestTimeout = TimeSpan.FromSeconds(3);
+
         private readonly HttpClient client;
 
         private string token;
@@ -26,22 +32,45 @@ namespace TapoDevices
         /// Creates an instance of connection to Tapo device.
         /// </summary>
         /// <param name="ipAddress">IP address of device in local network.</param>
-        public TapoDevice(string ipAddress) // TODO: ? DeviceFactory with shared credentials?
+        /// <param name="username">User name.</param>
+        /// <param name="password">Password.</param>
+        /// <param name="defaultRequestTimeout">Default request timeout.</param>
+        public TapoDevice(
+            string ipAddress,
+            string username,
+            string password,
+            TimeSpan defaultRequestTimeout)
         {
+            this.username = username;
+            this.password = password;
+            this.defaultRequestTimeout = defaultRequestTimeout;
+
             this.client = new HttpClient
             {
-                Timeout = TimeSpan.FromSeconds(5.0), // TODO: ? parameter
+                Timeout = this.defaultRequestTimeout,
                 BaseAddress = new Uri($"http://{ipAddress}/app")
             };
         }
 
         /// <summary>
-        /// Connect to device using Tapo account credentials.
+        /// Creates an instance of connection to Tapo device.
         /// </summary>
+        /// <param name="ipAddress">IP address of device in local network.</param>
         /// <param name="username">User name.</param>
         /// <param name="password">Password.</param>
+        public TapoDevice(
+            string ipAddress,
+            string username,
+            string password) : this(ipAddress, username, password, TimeSpan.FromSeconds(3))
+        {
+
+        }
+
+        /// <summary>
+        /// Connect to device using Tapo account credentials.
+        /// </summary>
         /// <returns>Task representing connection.</returns>
-        public async Task ConnectAsync(string username, string password)
+        public async Task ConnectAsync()
         {
             var key = RSA.Create(1024);
             var publicKey = key.ExportSubjectPublicKeyInfo(); // TODO: replacement for .NET Standard 2.0
@@ -64,12 +93,12 @@ namespace TapoDevices
             this.encryptor = aes.CreateEncryptor(aesKey, aesIV);
             this.decryptor = aes.CreateDecryptor(aesKey, aesIV);
 
-            var hashedUsername = SHA1.HashData(Encoding.UTF8.GetBytes(username));
+            var hashedUsername = SHA1.HashData(Encoding.UTF8.GetBytes(this.username));
             var hashedUsernameHexBytes = Encoding.UTF8.GetBytes(Convert.ToHexString(hashedUsername).ToLower());
             var loginRequest = LoginDevice.CreateRequest(new LoginDevice.Params
             {
                 Username = Convert.ToBase64String(hashedUsernameHexBytes, Base64FormattingOptions.InsertLineBreaks),
-                Password = Convert.ToBase64String(Encoding.UTF8.GetBytes(password), Base64FormattingOptions.InsertLineBreaks),
+                Password = Convert.ToBase64String(Encoding.UTF8.GetBytes(this.password), Base64FormattingOptions.InsertLineBreaks),
             });
 
             var loginRequestEncoded = Utils.SecureEncode(this.encryptor, loginRequest);
@@ -105,7 +134,6 @@ namespace TapoDevices
 
         // TODO: more control methods
         // TODO: Turn on/off with delay ("add_countdown_rule")
-        // TODO: GetEnergyUsage ("get_energy_usage") for P110
 
         #endregion
 

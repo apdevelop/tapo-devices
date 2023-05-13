@@ -40,6 +40,9 @@ namespace TapoDevices
             [JsonPropertyName("oem_id")]
             public string OemId { get; set; }
 
+            [JsonPropertyName("overheated")]
+            public bool Overheated { get; set; }
+
             [JsonPropertyName("ip")]
             public string IPAddress { get; set; }
 

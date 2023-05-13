@@ -7,9 +7,28 @@ namespace TapoDevicesDemoApp
     {
         static async Task Main()
         {
-            // Connect to device with specified IP address, using Tapo account credentials (email and password)
-            var bulb = new TapoDevices.TapoBulb("192.168.1.79");
-            await bulb.ConnectAsync("user@domain.com", "password");
+            // Tapo account credentials (email and password)
+            var factory = new TapoDevices.TapoDeviceFactory("user@domain.com", "password");
+
+            // Connect to device with specified IP address
+            var plug = factory.CreatePlug("192.168.1.72", TimeSpan.FromSeconds(1));
+            await plug.ConnectAsync();
+            var plugInfo = await plug.GetInfoAsync();
+            Console.WriteLine($"{plugInfo.Type}  {plugInfo.Model}  '{plugInfo.Nickname}'");
+            Console.WriteLine($"HW={plugInfo.HardwareVersion}  FW={plugInfo.FirmwareVersion}");
+            Console.WriteLine($"IP={plugInfo.IPAddress}  MAC={plugInfo.MacAddress}  SSID ='{plugInfo.SSID}'  RSSI={plugInfo.Rssi}");
+
+            var plugEnergy = await plug.GetEnergyUsageAsync();
+            Console.WriteLine($"Power={plugEnergy.CurrentPowerWatts:0.0} W");
+            Console.WriteLine($" Today: {plugEnergy.TodayEnergykWh:0.000} kWh  {plugEnergy.TodayRuntime.TotalHours:0.0} h");
+            Console.WriteLine($" Month: {plugEnergy.MonthEnergykWh:0.000} kWh  {plugEnergy.MonthRuntime.TotalHours:0.0} h");
+
+            Console.ReadLine();
+            return;
+
+            // Connect to device with specified IP address
+            var bulb = factory.CreateBulb("192.168.1.79");
+            await bulb.ConnectAsync();
 
             // Read and display device information
             var info = await bulb.GetInfoAsync();
