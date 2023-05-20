@@ -132,8 +132,37 @@ namespace TapoDevices
             await PostSecuredAsync<TapoRequest<SetDeviceInfo.Params>, SetDeviceInfo.Result>(request);
         }
 
+        public async Task TurnOnWithDelayAsync(TimeSpan delay)
+        {
+            var request = AddCountdownRule.CreateRequest(new AddCountdownRule.Params
+            {
+                Enable = true,
+                Delay = (int)delay.TotalSeconds,
+                DesiredStates = new AddCountdownRule.ParamsStates { On = true, },
+            });
+
+            await PostSecuredAsync<TapoRequest<AddCountdownRule.Params>, AddCountdownRule.Result>(request);
+        }
+
+        public async Task TurnOffWithDelayAsync(TimeSpan delay)
+        {
+            var request = AddCountdownRule.CreateRequest(new AddCountdownRule.Params
+            {
+                Enable = true,
+                Delay = (int)delay.TotalSeconds,
+                DesiredStates = new AddCountdownRule.ParamsStates { On = false, },
+            });
+
+            await PostSecuredAsync<TapoRequest<AddCountdownRule.Params>, AddCountdownRule.Result>(request);
+        }
+
+        public async Task<GetCountdownRules.Result> GetCountdownRulesAsync()
+        {
+            var request = GetCountdownRules.CreateRequest();
+            return await PostSecuredAsync<TapoRequest<GetCountdownRules.Params>, GetCountdownRules.Result>(request);
+        }
+
         // TODO: more control methods
-        // TODO: Turn on/off with delay ("add_countdown_rule")
 
         #endregion
 

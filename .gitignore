@@ -8,3 +8,5 @@ Src/**/*.suo
 Src/**/*.user
 
 *.pubxml
+
+/Src/TapoDevicesDemoApp/Properties/launchSettings.json

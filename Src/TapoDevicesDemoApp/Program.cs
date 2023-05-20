@@ -5,26 +5,35 @@ namespace TapoDevicesDemoApp
 {
     class Program
     {
-        static async Task Main()
+        static async Task Main(string[] args)
         {
-            // Tapo account credentials (email and password)
-            var factory = new TapoDevices.TapoDeviceFactory("user@domain.com", "password");
+            // Tapo account credentials (email and password) from command line
+            var factory = new TapoDevices.TapoDeviceFactory(args[0], args[1]);
 
             // Connect to device with specified IP address
-            var plug = factory.CreatePlug("192.168.1.72", TimeSpan.FromSeconds(1));
+            var plug = factory.CreatePlug("192.168.1.69", TimeSpan.FromSeconds(1));
             await plug.ConnectAsync();
             var plugInfo = await plug.GetInfoAsync();
             Console.WriteLine($"{plugInfo.Type}  {plugInfo.Model}  '{plugInfo.Nickname}'");
             Console.WriteLine($"HW={plugInfo.HardwareVersion}  FW={plugInfo.FirmwareVersion}");
             Console.WriteLine($"IP={plugInfo.IPAddress}  MAC={plugInfo.MacAddress}  SSID ='{plugInfo.SSID}'  RSSI={plugInfo.Rssi}");
 
+            await plug.TurnOnAsync();
+
             var plugEnergy = await plug.GetEnergyUsageAsync();
             Console.WriteLine($"Power={plugEnergy.CurrentPowerWatts:0.0} W");
             Console.WriteLine($" Today: {plugEnergy.TodayEnergykWh:0.000} kWh  {plugEnergy.TodayRuntime.TotalHours:0.0} h");
             Console.WriteLine($" Month: {plugEnergy.MonthEnergykWh:0.000} kWh  {plugEnergy.MonthRuntime.TotalHours:0.0} h");
 
+            await plug.TurnOffAsync();
+            await plug.TurnOnWithDelayAsync(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(2));
+            var rules = await plug.GetCountdownRulesAsync();
+            Console.WriteLine($"Rule: '{rules.Rules[0].Id}' remain: {rules.Rules[0].Remain} s");
+
+            await plug.TurnOffWithDelayAsync(TimeSpan.FromSeconds(5));
+
             Console.ReadLine();
-            return;
 
             // Connect to device with specified IP address
             var bulb = factory.CreateBulb("192.168.1.79");

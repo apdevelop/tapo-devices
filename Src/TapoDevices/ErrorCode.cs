@@ -25,6 +25,9 @@ namespace TapoDevices
         [Description("Invalid request or credentials")]
         InvalidRequestOrCredentials = -1501,
 
+        [Description("No more countdown rules can be added")]
+        NoMoreCountdownRules = -1802,
+
         [Description("Handshake error")]
         HandshakeError = -40401,
     }
