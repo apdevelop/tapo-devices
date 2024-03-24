@@ -14,16 +14,16 @@ namespace TapoDevices
             this.password = password;
         }
 
-        public TapoBulb CreateBulb(string ipAddress) => 
+        public TapoBulb CreateBulb(string ipAddress) =>
             new TapoBulb(ipAddress, this.username, this.password);
 
-        public TapoBulb CreateBulb(string ipAddress, TimeSpan defaultRequestTimeout) =>
-            new TapoBulb(ipAddress, this.username, this.password, defaultRequestTimeout);
+        public TapoBulb CreateBulb(string ipAddress, TimeSpan defaultTimeout) =>
+            new TapoBulb(ipAddress, this.username, this.password, defaultTimeout);
 
         public TapoPlug CreatePlug(string ipAddress) =>
             new TapoPlug(ipAddress, this.username, this.password);
 
-        public TapoPlug CreatePlug(string ipAddress, TimeSpan defaultRequestTimeout) =>
-            new TapoPlug(ipAddress, this.username, this.password, defaultRequestTimeout);
+        public TapoPlug CreatePlug(string ipAddress, TimeSpan defaultTimeout) =>
+            new TapoPlug(ipAddress, this.username, this.password, defaultTimeout);
     }
 }

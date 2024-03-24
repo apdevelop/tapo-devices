@@ -21,7 +21,7 @@ namespace TapoDevices
             string ipAddress,
             string username,
             string password,
-            TimeSpan defaultRequestTimeout) : base(ipAddress, username, password, defaultRequestTimeout)
+            TimeSpan defaultTimeout) : base(ipAddress, username, password, defaultTimeout)
         {
 
         }

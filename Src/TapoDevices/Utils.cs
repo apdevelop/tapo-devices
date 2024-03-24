@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -13,6 +14,12 @@ namespace TapoDevices
         private static long MillisecondsNow =>
             (long)Math.Round((DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds);
 
+        public static bool ByteArraysEqual(ReadOnlySpan<byte> a1, ReadOnlySpan<byte> a2) => 
+            a1.SequenceEqual(a2);
+
+        // Convert.ToHexString implementation for .NET Standard2.0
+        public static string ToHexString(byte[] bytes) => String.Join(String.Empty, bytes.Select(b => b.ToString("X2")));
+
         public static TapoRequest<TParams> CreateTapoRequest<TParams>(string method, TParams parameters)
         {
             return new TapoRequest<TParams>
@@ -20,6 +27,7 @@ namespace TapoDevices
                 Method = method,
                 Parameters = parameters,
                 RequestTimeMilliseconds = MillisecondsNow,
+                // TODO: ? terminalUUID = Guid in '65fa8d8d1b8cd' form ?
             };
         }
 
@@ -32,6 +40,11 @@ namespace TapoDevices
         {
             var jsonUtfReader = new Utf8JsonReader(new ReadOnlySpan<byte>(bytes));
             return JsonSerializer.Deserialize<T>(ref jsonUtfReader, SerializerOptions);
+        }
+
+        public static T Deserialize<T>(string jsonString)
+        {
+            return JsonSerializer.Deserialize<T>(jsonString, SerializerOptions);
         }
 
         public static TapoRequest<SecurePassthrough.Params> SecureEncode<TRequest>(ICryptoTransform encryptor, TRequest request)

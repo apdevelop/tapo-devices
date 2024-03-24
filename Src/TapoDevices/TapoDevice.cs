@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -12,15 +14,17 @@ namespace TapoDevices
     /// <summary>
     /// Represents connection to generic Tapo device.
     /// </summary>
-    public class TapoDevice // TODO: TapoPlug
+    public class TapoDevice
     {
         private readonly string username;
 
         private readonly string password;
 
-        private readonly TimeSpan defaultRequestTimeout = TimeSpan.FromSeconds(3);
+        private readonly TimeSpan defaultTimeout = TimeSpan.FromSeconds(5);
 
         private readonly HttpClient client;
+
+        private readonly CookieContainer cookies;
 
         private string token;
 
@@ -28,27 +32,35 @@ namespace TapoDevices
 
         private ICryptoTransform decryptor;
 
+        private KlapCipher klapSession;
+
         /// <summary>
         /// Creates an instance of connection to Tapo device.
         /// </summary>
         /// <param name="ipAddress">IP address of device in local network.</param>
         /// <param name="username">User name.</param>
         /// <param name="password">Password.</param>
-        /// <param name="defaultRequestTimeout">Default request timeout.</param>
+        /// <param name="defaultTimeout">Default request timeout.</param>
         public TapoDevice(
             string ipAddress,
             string username,
             string password,
-            TimeSpan defaultRequestTimeout)
+            TimeSpan defaultTimeout)
         {
             this.username = username;
             this.password = password;
-            this.defaultRequestTimeout = defaultRequestTimeout;
+            this.defaultTimeout = defaultTimeout;
 
-            this.client = new HttpClient
+            this.cookies = new CookieContainer();
+            var handler = new HttpClientHandler
             {
-                Timeout = this.defaultRequestTimeout,
-                BaseAddress = new Uri($"http://{ipAddress}/app")
+                CookieContainer = cookies
+            };
+
+            this.client = new HttpClient(handler)
+            {
+                Timeout = this.defaultTimeout,
+                BaseAddress = new Uri($"http://{ipAddress}/app/"), // ending slash must be here
             };
         }
 
@@ -61,7 +73,7 @@ namespace TapoDevices
         public TapoDevice(
             string ipAddress,
             string username,
-            string password) : this(ipAddress, username, password, TimeSpan.FromSeconds(3))
+            string password) : this(ipAddress, username, password, TimeSpan.FromSeconds(5))
         {
 
         }
@@ -71,6 +83,67 @@ namespace TapoDevices
         /// </summary>
         /// <returns>Task representing connection.</returns>
         public async Task ConnectAsync()
+        {
+            var localSeed = GenerateLocalSeed();
+
+            var r = await this.client.PostAsync("handshake1", new ByteArrayContent(localSeed));
+            r.EnsureSuccessStatusCode(); // TODO: ? fallback to SecurePassthrough
+
+            var responseContent = await r.Content.ReadAsByteArrayAsync();
+            var remoteSeed = responseContent.Skip(0).Take(16).ToArray();
+            var serverHash = responseContent.Skip(16).ToArray();
+            var localAuthHash = CreateAuthHash(this.username, this.password);
+
+            var ls = new List<byte>();
+            ls.AddRange(localSeed);
+            ls.AddRange(remoteSeed);
+            ls.AddRange(localAuthHash);
+
+            var localSeedAuthHash = SHA256.HashData(ls.ToArray());
+
+            if (Utils.ByteArraysEqual(localSeedAuthHash, serverHash))
+            {
+                var handshake2 = new List<byte>();
+                handshake2.AddRange(remoteSeed);
+                handshake2.AddRange(localSeed);
+                handshake2.AddRange(localAuthHash);
+
+                var payload = SHA256.HashData(handshake2.ToArray());
+
+                var response2 = await this.client.PostAsync("handshake2", new ByteArrayContent(payload));
+                response2.EnsureSuccessStatusCode();
+
+                this.klapSession = new KlapCipher(localSeed, remoteSeed, localAuthHash);
+            }
+            else
+            {
+                throw new InvalidOperationException("Error while performing handshake.");
+            }
+        }
+
+        private static byte[] GenerateLocalSeed()
+        {
+            var bytes = new byte[16];
+            new RNGCryptoServiceProvider().GetBytes(bytes);
+            return bytes;
+        }
+
+        private static byte[] CreateAuthHash(string username, string password)
+        {
+            var usernameHash = SHA1.HashData(Encoding.UTF8.GetBytes(username));
+            var passwordHash = SHA1.HashData(Encoding.UTF8.GetBytes(password));
+            var authHashSource = new List<byte>();
+            authHashSource.AddRange(usernameHash);
+            authHashSource.AddRange(passwordHash);
+
+            return SHA256.HashData(authHashSource.ToArray());
+        }
+
+        /// <summary>
+        /// Connect to device using Tapo account credentials (Obsolete since 2023 firmwares).
+        /// </summary>
+        /// <returns>Task representing connection.</returns>
+        public async Task ConnectOldAsync()
         {
             var key = RSA.Create(1024);
             var publicKey = key.ExportSubjectPublicKeyInfo(); // TODO: replacement for .NET Standard 2.0
@@ -94,7 +167,7 @@ namespace TapoDevices
             this.decryptor = aes.CreateDecryptor(aesKey, aesIV);
 
             var hashedUsername = SHA1.HashData(Encoding.UTF8.GetBytes(this.username));
-            var hashedUsernameHexBytes = Encoding.UTF8.GetBytes(Convert.ToHexString(hashedUsername).ToLower());
+            var hashedUsernameHexBytes = Encoding.UTF8.GetBytes(Utils.ToHexString(hashedUsername).ToLower());
             var loginRequest = LoginDevice.CreateRequest(new LoginDevice.Params
             {
                 Username = Convert.ToBase64String(hashedUsernameHexBytes, Base64FormattingOptions.InsertLineBreaks),
@@ -166,7 +239,7 @@ namespace TapoDevices
 
         #endregion
 
-        private bool IsConnected => this.encryptor != null && this.decryptor != null && this.token != null;
+        private bool IsConnected => this.klapSession != null || (this.encryptor != null && this.decryptor != null && this.token != null);
 
         protected void ValidateConnection()
         {
@@ -180,9 +253,25 @@ namespace TapoDevices
         {
             this.ValidateConnection();
 
-            var encoded = Utils.SecureEncode(this.encryptor, request);
-            var response = await this.PostAsync<SecurePassthrough.Params, SecurePassthrough.Result>(encoded, this.token);
-            var decoded = Utils.SecureDecode<TResult>(this.decryptor, response.Result);
+            TapoResponse<TResult> decoded;
+
+            if (this.klapSession != null)
+            {
+                var payload = this.klapSession.Encrypt(Utils.Serialize(request));
+
+                var response = await this.client.PostAsync("request?seq=" + this.klapSession.SeqCounter, new ByteArrayContent(payload));
+                response.EnsureSuccessStatusCode();
+
+                var contentString = await response.Content.ReadAsByteArrayAsync();
+                var decryptedResponse = this.klapSession.Decrypt(contentString);
+                decoded = Utils.Deserialize<TapoResponse<TResult>>(decryptedResponse);
+            }
+            else
+            {
+                var encoded = Utils.SecureEncode(this.encryptor, request);
+                var response = await this.PostAsync<SecurePassthrough.Params, SecurePassthrough.Result>(encoded, this.token);
+                decoded = Utils.SecureDecode<TResult>(this.decryptor, response.Result);
+            }
 
             if (decoded.ErrorCode != (int)ErrorCode.Success)
             {

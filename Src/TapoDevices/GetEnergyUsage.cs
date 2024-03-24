@@ -23,6 +23,9 @@ namespace TapoDevices
             [JsonPropertyName("today_runtime")]
             public int TodayRuntimeMinutes { get; set; }
 
+            /// <summary>
+            /// Current day runtime.
+            /// </summary>
             public TimeSpan TodayRuntime => TimeSpan.FromMinutes(this.TodayRuntimeMinutes);
 
             /// <summary>
@@ -31,6 +34,9 @@ namespace TapoDevices
             [JsonPropertyName("month_runtime")]
             public int MonthRuntimeMinutes { get; set; }
 
+            /// <summary>
+            /// Current month runtime.
+            /// </summary>
             public TimeSpan MonthRuntime => TimeSpan.FromMinutes(this.MonthRuntimeMinutes);
 
             /// <summary>
@@ -39,6 +45,9 @@ namespace TapoDevices
             [JsonPropertyName("today_energy")]
             public int TodayEnergy { get; set; }
 
+            /// <summary>
+            /// Current day energy, kWh.
+            /// </summary>
             public double TodayEnergykWh => this.TodayEnergy / 1000.0;
 
             /// <summary>
@@ -47,11 +56,20 @@ namespace TapoDevices
             [JsonPropertyName("month_energy")]
             public int MonthEnergy { get; set; }
 
+            /// <summary>
+            /// Current month energy, kWh.
+            /// </summary>
             public double MonthEnergykWh => this.MonthEnergy / 1000.0;
 
+            /// <summary>
+            /// Current power, mW.
+            /// </summary>
             [JsonPropertyName("current_power")]
             public int CurrentPowerMilliwatts { get; set; }
 
+            /// <summary>
+            /// Current power, W.
+            /// </summary>
             public double CurrentPowerWatts => this.CurrentPowerMilliwatts / 1000.0;
         }
 

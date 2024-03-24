@@ -7,6 +7,9 @@ namespace TapoDevices
         [Description("Success")]
         Success = 0,
 
+        [Description("Secure passthrough protocol deperecated for KLAP")]
+        SecurePassthroughDepreacted = 1003,
+
         [Description("Incorrect request")]
         IncorrectRequest = -1002,
 

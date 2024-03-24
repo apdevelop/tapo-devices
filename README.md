@@ -1,7 +1,7 @@
 # Tapo Devices
 
 The C# .NET5 library for basic controlling of some types of **TP-Link Tapo** devices 
-in local network (not using TP-Link Cloud features). Device must be registered and has known IP address.
+in local network without using TP-Link Cloud features. Device must be registered and has known IP address.
 
 This project is mostly experimental and based on undocumented API features.
 
@@ -40,9 +40,12 @@ await bulb.SetParametersAsync(
 ```
 
 ### Supported and tested devices
-* **P110** [Mini Smart Wi-Fi Socket, Energy Monitoring](https://www.tp-link.com/en/home-networking/smart-plug/tapo-p110/)
-* **L510** [Smart Wi-Fi Light Bulb, Dimmable](https://www.tp-link.com/en/home-networking/smart-bulb/tapo-l510e/)
-* **L530** [Smart Wi-Fi Light Bulb, Multicolor](https://www.tp-link.com/en/home-networking/smart-bulb/tapo-l530e/)
+
+| Device     |   Description  |   FW Version                     | 
+|:----------:|:--------------:|:--------------------------------:|
+| **P110**  | [Mini Smart Wi-Fi Socket, Energy Monitoring](https://www.tp-link.com/en/home-networking/smart-plug/tapo-p110/) | 1.3.0 Build 230905 Rel.152200  |
+| **L510**  | [Smart Wi-Fi Light Bulb, Dimmable](https://www.tp-link.com/en/home-networking/smart-bulb/tapo-l510e/)    | 1.1.0 Build 230721 Rel.224802 |
+| **L530**  | [Smart Wi-Fi Light Bulb, Multicolor](https://www.tp-link.com/en/home-networking/smart-bulb/tapo-l530e/)  | 1.1.0 Build 230721 Rel.224802 |
 
 ### Features
 * Asynchronous only set of methods for devices control
@@ -50,12 +53,15 @@ await bulb.SetParametersAsync(
 * NET 5.0 assembly without additional dependencies
 
 ### TODOs
-* Implement as .NET Standard 2.0 library
+* Implement as .NET8 / .NET Standard 2.0 library
 * Support for more of device features
 * Support for more device types
 * API documentation
+* Nuget package
 
 ### References
+* [TapoConnect](https://github.com/cwakefie27/TapoConnect)
+* [TP-Link Tapo devices support for MajorDoMo](https://github.com/sergejey/majordomo-tapo/tree/main)
 * [Kostiantyn's Blog: Connecting to Tapo lamps from F#](https://sharovarskyi.com/blog/posts/fsharp-tapo-lamps/)
 * [KHome.TapoLights](https://github.com/kostya9/KHome.TapoLights)
 * [PyP100 Python library](https://github.com/fishbigger/TapoP100)
