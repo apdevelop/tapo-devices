@@ -32,6 +32,12 @@ namespace TapoDevices
             return await PostSecuredAsync<TapoRequest<GetDeviceInfo.Params>, GetDeviceInfo.ResultBulb>(request);
         }
 
+        public async Task<GetDeviceUsage.ResultBulb> GetDeviceUsageAsync()
+        {
+            var request = GetDeviceUsage.CreateRequest();
+            return await PostSecuredAsync<TapoRequest<GetDeviceUsage.Params>, GetDeviceUsage.ResultBulb>(request);
+        }
+
         public async Task SetBrightnessAsync(int brightness)
         {
             var request = SetDeviceInfo.CreateRequest(new SetDeviceInfo.ParamsBulb { Brightness = brightness }); // TODO: check range

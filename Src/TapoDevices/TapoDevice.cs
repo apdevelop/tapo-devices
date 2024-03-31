@@ -235,6 +235,12 @@ namespace TapoDevices
             return await PostSecuredAsync<TapoRequest<GetCountdownRules.Params>, GetCountdownRules.Result>(request);
         }
 
+        public async Task<GetDeviceTime.Result> GetDeviceTimeAsync()
+        {
+            var request = GetDeviceTime.CreateRequest();
+            return await PostSecuredAsync<TapoRequest<GetDeviceTime.Params>, GetDeviceTime.Result>(request);
+        }
+
         // TODO: more control methods
 
         #endregion
@@ -258,12 +264,11 @@ namespace TapoDevices
             if (this.klapSession != null)
             {
                 var payload = this.klapSession.Encrypt(Utils.Serialize(request));
-
                 var response = await this.client.PostAsync("request?seq=" + this.klapSession.SeqCounter, new ByteArrayContent(payload));
                 response.EnsureSuccessStatusCode();
 
-                var contentString = await response.Content.ReadAsByteArrayAsync();
-                var decryptedResponse = this.klapSession.Decrypt(contentString);
+                var responseData = await response.Content.ReadAsByteArrayAsync();
+                var decryptedResponse = this.klapSession.Decrypt(responseData);
                 decoded = Utils.Deserialize<TapoResponse<TResult>>(decryptedResponse);
             }
             else
@@ -288,7 +293,9 @@ namespace TapoDevices
             content.Headers.ContentType = new MediaTypeHeaderValue(Utils.JsonMediaType);
             var url = String.IsNullOrEmpty(token) ? String.Empty : $"?token={token}";
             var response = await this.client.PostAsync(url, content);
-            var deserialized = await response.Content.ReadFromJsonAsync<TapoResponse<TResult>>(Utils.SerializerOptions);
+            var responseData = await response.Content.ReadAsByteArrayAsync();
+            var deserialized = Utils.Deserialize<TapoResponse<TResult>>(responseData);
+            // TODO: ! check var deserialized = await response.Content.ReadFromJsonAsync<TapoResponse<TResult>>(Utils.SerializerOptions);
             return deserialized;
         }
     }

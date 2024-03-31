@@ -50,8 +50,6 @@ namespace TapoDevices
             public int? ColorTemperature { get; set; }
         }
 
-        // TODO: ParamsPlug
-
         public class Result
         {
 
