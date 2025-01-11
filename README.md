@@ -47,6 +47,7 @@ await bulb.SetParametersAsync(
 | **P300**  |[Smart Wi-Fi Power Strip](https://www.tp-link.com/en/home-networking/smart-plug/tapo-p300/) | 1.0.15 Build 231130 Rel.122554  |
 | **L510**  |[Smart Wi-Fi Light Bulb, Dimmable](https://www.tp-link.com/en/home-networking/smart-bulb/tapo-l510e/)    | 1.1.0 Build 230721 Rel.224802 |
 | **L530**  |[Smart Wi-Fi Light Bulb, Multicolor](https://www.tp-link.com/en/home-networking/smart-bulb/tapo-l530e/)  | 1.1.0 Build 230721 Rel.224802 |
+| **L535B**  |[Smart Wi-Fi Light Bulb, Multicolor](https://www.tp-link.com/en/home-networking/smart-bulb/tapo-l535b/)  | 1.1.5 Build 240328 Rel.194528 |
 
 ### Features
 * Asynchronous only set of methods for devices control
